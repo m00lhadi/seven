@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>نشاط تفاعلي: الكرة والمضرب</title>
+  <style>
+    :root { --bg:#0b1220; --panel:#0f1b33; --txt:#e9eefc; --muted:#b7c3e6; }
+    body{
+      margin:0; font-family: system-ui, "Segoe UI", Tahoma, Arial;
+      background: radial-gradient(1200px 600px at 50% 0%, #172a52, var(--bg));
+      color:var(--txt);
+      display:flex; min-height:100vh; align-items:center; justify-content:center;
+      padding:18px;
+    }
+    .wrap{ width:min(920px, 100%); display:grid; gap:14px; grid-template-columns: 1.4fr .9fr; }
+    @media (max-width: 900px){ .wrap{ grid-template-columns: 1fr; } }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px; box-shadow: 0 18px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .top{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding:12px 14px; background: rgba(0,0,0,.18);
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .title{ font-weight:800; letter-spacing:.2px; }
+    .meta{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:13px; }
+    .btns{ display:flex; gap:8px; flex-wrap:wrap; }
+    button{
+      background:#2a57ff; color:white; border:none; padding:9px 12px;
+      border-radius:12px; cursor:pointer; font-weight:700;
+    }
+    button.secondary{ background: rgba(255,255,255,.10); }
+    button:active{ transform: translateY(1px); }
+    .body{ padding:12px 14px; }
+    canvas{
+      width:100%; height:auto; display:block;
+      background: linear-gradient(180deg, #bfe7ff, #8cc6ff 55%, #6eb1ff);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.35);
+    }
+    .hint{
+      margin-top:10px; font-size:13px; color:var(--muted); line-height:1.7;
+    }
+    .side .body{ line-height:1.8; color:var(--txt); }
+    .kbd{
+      display:inline-block; padding:2px 8px; border-radius:10px;
+      background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12);
+      font-size:12px; color:var(--txt);
+    }
+    .stat{
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+      margin-top:10px;
+    }
+    .pill{
+      padding:10px 12px; border-radius:14px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+      display:flex; justify-content:space-between; gap:10px;
+      color:var(--muted); font-size:13px;
+    }
+    .pill b{ color:var(--txt); }
+    .footerNote{
+      margin-top:10px; font-size:12.5px; color:var(--muted);
+      opacity:.95;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- GAME -->
+    <div class="card">
+      <div class="top">
+        <div>
+          <div class="title">🎾 نشاط تفاعلي: لعبة الكرة والمضرب (HTML)</div>
+          <div class="meta">
+            <span>تحريك المضرب بالماوس</span> •
+            <span>ارتداد + نقاط + صوت</span> •
+            <span>Game Over عند لمس الشريط الأحمر</span>
+          </div>
+        </div>
+        <div class="btns">
+          <button id="startBtn">ابدأ / تشغيل</button>
+          <button class="secondary" id="resetBtn">إعادة</button>
+          <button class="secondary" id="muteBtn">الصوت: تشغيل</button>
+        </div>
+      </div>
+      <div class="body">
+        <canvas id="game" width="900" height="520" aria-label="Canvas Game"></canvas>
+        <div class="hint">
+          💡 حرّكي الماوس يمين/يسار فوق اللوحة لتحريك المضرب. اضغطي <span class="kbd">مسافة</span> للإيقاف/الاستئناف.
+        </div>
+      </div>
+    </div>
+
+    <!-- INSTRUCTIONS / TEACHER PANEL -->
+    <div class="card side">
+      <div class="top">
+        <div class="title">📌 هدف النشاط + أفكار تفاعلية للطالبات</div>
+      </div>
+      <div class="body">
+        <ul>
+          <li>راقبي: كيف يتبع المضرب حركة الماوس على المحور الأفقي (مثل set x to mouse x).</li>
+          <li>استنتجي: ماذا يحدث عند اصطدام الكرة بحواف الشاشة (bounce).</li>
+          <li>جرّبي: كيف نغيّر اتجاه الكرة عند لمس المضرب (انعكاس لأعلى + زاوية عشوائية).</li>
+          <li>ناقشي: كيف نصنع “Game Over” عند لمس الشريط الأحمر بالأسفل.</li>
+        </ul>
+
+        <div class="stat">
+          <div class="pill"><span>النقاط</span><b id="uiScore">0</b></div>
+          <div class="pill"><span>المحاولات</span><b id="uiLives">3</b></div>
+          <div class="pill"><span>السرعة</span><b id="uiSpeed">4.0</b></div>
+          <div class="pill"><span>الحالة</span><b id="uiState">جاهز</b></div>
+        </div>
+
+        <div class="footerNote">
+          ✅ هذا النشاط مطابق لفكرة الملف: المضرب يتبع الماوس، الكرة تتحرك وتارتد، عند لمس المضرب تتجه لأعلى مع تغيير بسيط في الزاوية، صوت اصطدام، والتوقف عند لمس الأسفل الأحمر. :contentReference[oaicite:1]{index=1}
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  // UI
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const muteBtn  = document.getElementById('muteBtn');
+  const uiScore  = document.getElementById('uiScore');
+  const uiLives  = document.getElementById('uiLives');
+  const uiSpeed  = document.getElementById('uiSpeed');
+  const uiState  = document.getElementById('uiState');
+
+  // Game constants
+  const W = canvas.width, H = canvas.height;
+  const groundH = 44;                 // red zone height (Game Over zone)
+  const paddle = {
+    w: 150, h: 18,
+    x: W/2, y: H - groundH - 30,
+    rx: 14
+  };
+  const ball = {
+    r: 14,
+    x: W/2, y: 120,
+    vx: 2.2, vy: 3.4
+  };
+
+  let score = 0;
+  let lives = 3;
+  let running = false;
+  let paused = false;
+  let muted = false;
+  let raf = null;
+
+  // Simple audio (WebAudio beep)
+  let audioCtx = null;
+  function beep(freq=440, dur=0.06){
+    if (muted) return;
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+  }
+
+  function setState(text){ uiState.textContent = text; }
+  function syncUI(){
+    uiScore.textContent = score;
+    uiLives.textContent = lives;
+    uiSpeed.textContent = (Math.hypot(ball.vx, ball.vy)).toFixed(1);
+  }
+
+  function resetPositions(){
+    paddle.x = W/2;
+    ball.x = W/2;
+    ball.y = 120;
+    // Random initial direction
+    const speed = 4.0;
+    const angle = (Math.random()*0.9 + 0.35); // radians-ish range
+    ball.vx = Math.cos(angle) * (Math.random() < 0.5 ? -speed : speed);
+    ball.vy = Math.sin(angle) * speed;
+  }
+
+  function fullReset(){
+    score = 0;
+    lives = 3;
+    paused = false;
+    running = false;
+    resetPositions();
+    setState("جاهز");
+    syncUI();
+    draw(); // show initial screen
+  }
+
+  // Mouse move = paddle follows x (like "set x to mouse x")
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, mx));
+  });
+
+  // Touch support
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const mx = (t.clientX - rect.left) * (canvas.width / rect.width);
+    paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, mx));
+  }, { passive:false });
+
+  // Pause with Space
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space'){
+      e.preventDefault();
+      if (!running) return;
+      paused = !paused;
+      setState(paused ? "متوقف مؤقتًا" : "يعمل");
+      if (!paused) loop();
+    }
+  });
+
+  startBtn.addEventListener('click', async () => {
+    // Resume audio context on user gesture for some browsers
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+
+    if (!running){
+      running = true;
+      paused = false;
+      setState("يعمل");
+      loop();
+    } else {
+      paused = !paused;
+      setState(paused ? "متوقف مؤقتًا" : "يعمل");
+      if (!paused) loop();
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    cancelAnimationFrame(raf);
+    fullReset();
+  });
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    muteBtn.textContent = `الصوت: ${muted ? "إيقاف" : "تشغيل"}`;
+    if (!muted) beep(520, 0.05);
+  });
+
+  function collideBallWithWalls(){
+    // left/right
+    if (ball.x - ball.r <= 0){
+      ball.x = ball.r;
+      ball.vx *= -1;
+      beep(520, 0.04);
+    }
+    if (ball.x + ball.r >= W){
+      ball.x = W - ball.r;
+      ball.vx *= -1;
+      beep(520, 0.04);
+    }
+    // top
+    if (ball.y - ball.r <= 0){
+      ball.y = ball.r;
+      ball.vy *= -1;
+      beep(520, 0.04);
+    }
+  }
+
+  function collideBallWithPaddle(){
+    // AABB check
+    const px0 = paddle.x - paddle.w/2;
+    const px1 = paddle.x + paddle.w/2;
+    const py0 = paddle.y - paddle.h/2;
+    const py1 = paddle.y + paddle.h/2;
+
+    const bx0 = ball.x - ball.r;
+    const bx1 = ball.x + ball.r;
+    const by0 = ball.y - ball.r;
+    const by1 = ball.y + ball.r;
+
+    const hit = (bx1 >= px0 && bx0 <= px1 && by1 >= py0 && by0 <= py1);
+
+    if (hit && ball.vy > 0){
+      // bounce up
+      ball.y = py0 - ball.r - 0.5;
+      // vary angle based on where it hits the paddle + random turn like "pick random"
+      const offset = (ball.x - paddle.x) / (paddle.w/2); // -1..1
+      const speed = Math.max(4, Math.hypot(ball.vx, ball.vy) * 1.02); // slightly increase over time
+      const rand = (Math.random()*0.6 - 0.3); // random tweak
+      const vx = (offset * 3.2) + rand;
+      const vy = -Math.sqrt(Math.max(1, speed*speed - vx*vx));
+      ball.vx = vx;
+      ball.vy = vy;
+
+      score += 1;
+      beep(780, 0.05);
+      syncUI();
+    }
+  }
+
+  function checkGameOverZone(){
+    // red strip at the bottom (touching color concept)
+    if (ball.y + ball.r >= H - groundH){
+      lives -= 1;
+      beep(180, 0.12);
+
+      if (lives <= 0){
+        running = false;
+        paused = false;
+        setState("انتهت اللعبة");
+        syncUI();
+        draw(true);
+        return true;
+      } else {
+        setState("محاولة جديدة");
+        syncUI();
+        // reset ball only
+        ball.x = W/2;
+        ball.y = 120;
+        const speed = 4.0 + (score * 0.06);
+        const angle = (Math.random()*1.0 + 0.2);
+        ball.vx = Math.cos(angle) * (Math.random() < 0.5 ? -speed : speed);
+        ball.vy = Math.sin(angle) * speed;
+      }
+    }
+    return false;
+  }
+
+  function update(){
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    collideBallWithWalls();
+    collideBallWithPaddle();
+
+    // If touching bottom red zone => "stop all" concept
+    if (checkGameOverZone()) return;
+  }
+
+  function draw(gameOver=false){
+    ctx.clearRect(0,0,W,H);
+
+    // Background: simple park vibe
+    // Sky already in canvas CSS, draw ground and path water-ish
+    ctx.save();
+
+    // distant hills
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.arc(140, 410, 280, 0, Math.PI*2);
+    ctx.arc(380, 450, 320, 0, Math.PI*2);
+    ctx.arc(740, 430, 300, 0, Math.PI*2);
+    ctx.fillStyle = "#2b8a3e";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // path
+    ctx.beginPath();
+    ctx.moveTo(0, 360);
+    ctx.bezierCurveTo(220, 300, 360, 330, 520, 300);
+    ctx.bezierCurveTo(700, 265, 820, 280, 900, 260);
+    ctx.lineTo(900, 520);
+    ctx.lineTo(0, 520);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(240, 220, 170, .75)";
+    ctx.fill();
+
+    // red danger zone
+    ctx.fillStyle = "#d82020";
+    ctx.fillRect(0, H - groundH, W, groundH);
+
+    // Paddle
+    const px = paddle.x - paddle.w/2, py = paddle.y - paddle.h/2;
+    roundRect(ctx, px, py, paddle.w, paddle.h, paddle.rx);
+    ctx.fillStyle = "#7a4a1e";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.25)";
+    ctx.stroke();
+
+    // Ball
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    // stitches
+    ctx.strokeStyle = "rgba(210,30,30,.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(ball.x-3, ball.y+1, ball.r-4, -0.6, 0.9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ball.x+3, ball.y-1, ball.r-4, 2.4, 4.1);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // HUD
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    roundRect(ctx, 12, 12, 260, 80, 14);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px system-ui,Segoe UI,Tahoma";
+    ctx.fillText(`النقاط: ${score}`, 24, 42);
+    ctx.fillText(`المحاولات: ${lives}`, 24, 70);
+
+    // message
+    if (!running && !gameOver){
+      ctx.fillStyle = "rgba(0,0,0,.45)";
+      roundRect(ctx, W/2 - 210, H/2 - 70, 420, 140, 18);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.font = "800 22px system-ui,Segoe UI,Tahoma";
+      ctx.fillText("اضغطي: ابدأ / تشغيل", W/2, H/2 - 12);
+      ctx.font = "600 16px system-ui,Segoe UI,Tahoma";
+      ctx.fillText("حرّكي الماوس لتحريك المضرب 🎯", W/2, H/2 + 20);
+      ctx.fillText("تجنّبي الشريط الأحمر بالأسفل 🔴", W/2, H/2 + 46);
+      ctx.textAlign = "start";
+    }
+
+    if (gameOver){
+      ctx.fillStyle = "rgba(0,0,0,.55)";
+      roundRect(ctx, W/2 - 230, H/2 - 85, 460, 170, 18);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.font = "900 28px system-ui,Segoe UI,Tahoma";
+      ctx.fillText("GAME OVER", W/2, H/2 - 18);
+      ctx.font = "700 18px system-ui,Segoe UI,Tahoma";
+      ctx.fillText(`نتيجتك: ${score} نقطة`, W/2, H/2 + 18);
+      ctx.font = "600 14px system-ui,Segoe UI,Tahoma";
+      ctx.fillText("اضغطي (إعادة) للمحاولة من جديد", W/2, H/2 + 48);
+      ctx.textAlign = "start";
+    }
+
+    ctx.restore();
+  }
+
+  function loop(){
+    if (!running || paused) return;
+    update();
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function roundRect(ctx, x, y, w, h, r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  // init
+  fullReset();
+})();
+</script>
+</body>
+</html>
